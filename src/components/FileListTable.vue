@@ -1,5 +1,11 @@
 <template>
-  <n-flex vertical :size="0">
+  <n-flex
+    vertical
+    :size="0"
+    style="overflow: hidden"
+    @dragover.prevent.stop="onDragOver"
+    @drop.prevent.stop="onDrop"
+  >
     <n-flex style="flex: 0 0 26px">
       <n-button-group size="tiny">
         <n-dropdown trigger="click" :options="options">
@@ -61,7 +67,7 @@ import {
   isReactive,
   isRef,
 } from "vue";
-import { naturalCompare } from "@/utils/common";
+import { buildUUID, naturalCompare } from "@/utils/common";
 import type { RowData } from "@/interface/ListDataTable";
 import { ArrowForwardCircleSharp, Warning } from "@vicons/ionicons5";
 
@@ -121,7 +127,7 @@ const columns: DataTableColumns<RowData> = [
     width: 50,
     fixed: "left",
     render(rowData, rowIndex) {
-      return rowIndex;
+      return rowIndex + 1;
     },
   },
   {
@@ -129,6 +135,9 @@ const columns: DataTableColumns<RowData> = [
     key: "key",
     width: 50,
     fixed: "left",
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: "名称",
@@ -138,7 +147,6 @@ const columns: DataTableColumns<RowData> = [
     minWidth: 120,
     maxWidth: 400,
     fixed: "left",
-
     ellipsis: {
       tooltip: true,
     },
@@ -198,10 +206,10 @@ const sortedData = computed<RowData[]>(() => {
 });
 
 //s 最近一次鼠标点击的行的Key(只有鼠标单击或按住Ctrl单击时会记录)
-let currentClickKey: number | null = null;
+let currentClickKey: string | null = null;
 
 //s 选中列的Key列表
-const listSelected = reactive<number[]>([]);
+const listSelected = reactive<string[]>([]);
 
 //f 自定义属性
 function rowProps(row: RowData, rowIndex: number): HTMLAttributes {
@@ -259,7 +267,7 @@ function rowClassName(rowData: RowData) {
 
 //f 发生排序时的回调
 function handleSort(sortInfo: DataTableSortState) {
-  // console.log("发生排序", sortInfo);
+  console.log("发生排序", sortInfo);
   sorter.value = sortInfo;
 }
 
@@ -272,6 +280,64 @@ function updateData() {
   console.log("更新数据：", sortedData.value);
   data.value = [...sortedData.value];
 }
+
+function onDragOver(e: DragEvent) {
+  // console.log("dragOver");
+}
+
+async function onDrop(e: DragEvent) {
+  // 检查拖拽数据
+  if (!e.dataTransfer || !e.dataTransfer.items) return;
+
+  const items = Array.from(e.dataTransfer.items); // 获取拖拽项
+  const newFiles: RowData[] = [];
+
+  for (const item of items) {
+    const entry = item.webkitGetAsEntry?.(); // 获取文件或文件夹入口
+    if (entry) {
+      await traverseFileTree(entry, "", newFiles); // 遍历文件夹
+    }
+  }
+
+  // 将文件信息推入数据中
+  data.value.push(...newFiles);
+}
+
+/**
+ * 递归遍历文件夹内容
+ */
+function traverseFileTree(
+  entry: FileSystemEntry,
+  path: string,
+  files: RowData[]
+): Promise<void> {
+  return new Promise((resolve) => {
+    if (entry.isFile) {
+      // 处理文件
+      (entry as FileSystemFileEntry).file((file) => {
+        files.push({
+          key: buildUUID(),
+          name: file.name,
+          newName: file.name,
+          path: path + file.name, // 构建完整路径
+          state: "ok",
+        });
+        resolve();
+      });
+    } else if (entry.isDirectory) {
+      // 处理文件夹
+      const dirReader = (entry as FileSystemDirectoryEntry).createReader();
+      dirReader.readEntries(async (entries) => {
+        for (const subEntry of entries) {
+          await traverseFileTree(subEntry, path + entry.name + "/", files); // 递归
+        }
+        resolve();
+      });
+    } else {
+      resolve(); // 非文件或文件夹，直接跳过
+    }
+  });
+}
 </script>
 
 <style lang="scss" scoped>
@@ -281,5 +347,12 @@ function updateData() {
 }
 :deep(*) {
   user-select: none;
+}
+.drag-zone {
+  position: absolute;
+  background-color: wheat;
+  width: 100px;
+  height: 100px;
+  z-index: 1000;
 }
 </style>

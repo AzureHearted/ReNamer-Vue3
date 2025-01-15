@@ -15,6 +15,8 @@ import { NaiveUiResolver } from "unplugin-vue-components/resolvers";
 
 import { viteSingleFile } from "vite-plugin-singlefile";
 
+import { lazyImport, VxeResolver } from "vite-plugin-lazy-import";
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
@@ -50,6 +52,16 @@ export default defineConfig({
       ],
       dirs: ["src/views"],
       dts: "./types/components.d.ts",
+    }),
+    lazyImport({
+      resolvers: [
+        VxeResolver({
+          libraryName: "vxe-table",
+        }),
+        VxeResolver({
+          libraryName: "vxe-pc-ui",
+        }),
+      ],
     }),
   ],
   resolve: {

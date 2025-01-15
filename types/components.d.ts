@@ -12,13 +12,10 @@ declare module 'vue' {
     NButtonGroup: typeof import('naive-ui')['NButtonGroup']
     NConfigProvider: typeof import('naive-ui')['NConfigProvider']
     NDataTable: typeof import('naive-ui')['NDataTable']
-    NDivider: typeof import('naive-ui')['NDivider']
     NDropdown: typeof import('naive-ui')['NDropdown']
     NFlex: typeof import('naive-ui')['NFlex']
     NIcon: typeof import('naive-ui')['NIcon']
-    NSpace: typeof import('naive-ui')['NSpace']
     NSplit: typeof import('naive-ui')['NSplit']
-    NStatistic: typeof import('naive-ui')['NStatistic']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }
